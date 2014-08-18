@@ -1,5 +1,5 @@
 name:                catamorphism
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            A package exposing a helper function for generating catamorphisms.
 homepage:            http://github.com/frerich/catamorphism
 license:             BSD3
@@ -20,3 +20,4 @@ library
   build-depends:       base >=4.6 && <4.7, template-haskell >=2.8 && <2.9
   hs-source-dirs:      src
   default-language:    Haskell2010
+  ghc-options:         -Wall

@@ -38,15 +38,15 @@ conType :: Name -> Con -> Type
 conType resultT c = foldr makeFuncT (VarT resultT) (conArgTypes c)
 
 makeCata :: CataOptions -> Name -> Q [Dec]
-makeCata (CataOptions cataName) typeName  = sequence [signature, funDef]
+makeCata opts typeName  = sequence [signature, funDef]
   where
     signature :: Q Dec
     signature = do
         (TyConI (DataD _ _ tyVarBndrs cons _)) <- reify typeName
         let tyVarNames = map (\(PlainTV n) -> n) tyVarBndrs
-        let conT = foldl AppT (ConT typeName) (map VarT tyVarNames)
+        let typeConType = foldl AppT (ConT typeName) (map VarT tyVarNames)
         resultTypeName <- newName "a"
-        let args = map (conType resultTypeName) cons ++ [conT, VarT resultTypeName]
+        let args = map (conType resultTypeName) cons ++ [typeConType, VarT resultTypeName]
         return (SigD funName (ForallT (PlainTV resultTypeName : tyVarBndrs) [] (foldr1 makeFuncT args)))
 
     funDef :: Q Dec
@@ -54,9 +54,9 @@ makeCata (CataOptions cataName) typeName  = sequence [signature, funDef]
 
     funName :: Name
     funName = mkName $
-        if null cataName
+        if null (cataName opts)
             then let (x:xs) = nameBase typeName in toLower x : xs
-            else cataName
+            else cataName opts
 
     funImpl :: Q Clause
     funImpl = do
