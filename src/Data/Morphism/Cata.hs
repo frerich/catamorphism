@@ -1,3 +1,62 @@
+{-|
+Module:         Data.Morphism.Cata
+Copyright:      (c) 2014 Frerich Raabe
+License:        BSD3
+Maintainer:     frerich.raabe@gmail.com
+Stability:      experimental
+
+This module exposes a 'makeCata' function which can create catamorphisms for
+arbitrary Haskell types. Catamorphisms are functions which deconstruct some
+value by replacing each data constructor with a custom function yielding a new
+value. See <http://www.haskell.org/haskellwiki/Catamorphisms> for a more
+in-depth discussion of catamorphisms in Haskell.
+
+The Haskell base package already comes with a couple of standard catamorphisms
+such as 'bool' (for Bool values), 'maybe' (for Maybe values) values, 'either' for (Either values)
+values and foldr (for lists). These catamorphisms could have been generated using
+'makeCata' as follows:
+
+> -- Defines 'bool :: a -> a -> Bool -> a'
+> $(makeCata defaultOptions ''Bool)
+>
+> -- Defines 'maybe :: b -> (Maybe a -> b) -> Maybe a -> b'
+> $(makeCata defaultOptions ''Maybe)
+>
+> -- Defines 'either :: (a -> c) -> (b -> c) -> Either a b -> c'
+> $(makeCata defaultOptions ''Either)
+
+However, catamorphisms are especially useful for recursive data structures. Consider
+the following simple example which defines a basic data type for modelling sums
+of numbers, supporting variables:
+
+> {-# LANGUAGE TemplateHaskell #-}
+> 
+> import Data.Morphism.Cata
+> import Data.Maybe (fromJust)
+> import Data.Function (on)
+> 
+> data Expr a = Number a
+>             | Variable Char
+>             | Sum (Expr a) (Expr a)
+> 
+> $(makeCata defaultOptions { cataName = "cataExpr" } ''Expr)
+
+The 'makeCata' invocation defines a 'cataExpr' function which works like a fold on
+'Expr' values; it can be used to implement various useful other functions:
+
+> -- Evaluate an Expr, given some variable bindings
+> eval :: Num a => [(Char, a)] -> Expr a -> a
+> eval vars = cataExpr id (fromJust . (`lookup` vars)) ((+) `on` eval vars)
+> 
+> -- Pretty-prints an Expr
+> pprint :: Show a => Expr a -> String
+> pprint = cataExpr show show (\a b -> pprint a ++ " + " ++ pprint b)
+> 
+> -- Counts the number of variables used in an expr
+> numVars :: Expr a -> Int
+> numVars = cataExpr (const 1) (const 0) ((+) `on` numVars)
+-}
+
 module Data.Morphism.Cata
     ( CataOptions(..)
     , defaultOptions
@@ -12,10 +71,28 @@ import Data.Functor ((<$>))
 
 import Language.Haskell.TH
 
+{-|
+    Values of the 'CataOptions' type can be passed to 'makeCata' in order to
+    customize the generated catamorphism. At this point, only the name of the
+    function can be changed.
+-}
 data CataOptions = CataOptions {
+    {-|
+        The desired name for the catamorphism. An empty string will make
+        'makeCata' derive the catamorphism name from the type by just taking
+        the type name and making the first letter lower-case.
+    -}
     cataName :: String
 }
 
+{-|
+    The default catamorphism generation options; the catamorphism will be named
+    after the type, e.g.
+
+    > $(makeCata defaultOptions ''Bool)
+
+    defines a function 'bool'.
+-}
 defaultOptions :: CataOptions
 defaultOptions = CataOptions ""
 
@@ -37,7 +114,10 @@ conName (ForallC _ _ c) = conName c
 conType :: Name -> Con -> Type
 conType resultT c = foldr makeFuncT (VarT resultT) (conArgTypes c)
 
-makeCata :: CataOptions -> Name -> Q [Dec]
+-- |The 'makeCata' function creates a catamorphism for the given type.
+makeCata :: CataOptions     -- Options to customize the catamorphism; the name of the defined function can be changed
+         -> Name            -- The type to generate a catamorphism for.
+         -> Q [Dec]
 makeCata opts typeName  = sequence [signature, funDef]
   where
     signature :: Q Dec
