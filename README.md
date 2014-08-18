@@ -54,5 +54,5 @@ pprint = cataExpr show show (\a b -> pprint a ++ " + " ++ pprint b)
 -- Counts the number of variables used in an expr
 numVars :: Expr a -> Int
 numVars = cataExpr (const 1) (const 0) ((+) `on` numVars)
-```haskell
+```
 
