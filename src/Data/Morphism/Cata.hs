@@ -120,9 +120,10 @@ makeCata :: CataOptions     -- Options to customize the catamorphism; the name o
          -> Q [Dec]
 makeCata opts typeName = do
     typeInfo <- reify typeName
-    let (tyVarBndrs, cons) = case typeInfo of
-            TyConI (DataD _ _ tyVarBndrs cons _) -> (tyVarBndrs, cons)
-            TyConI (NewtypeD _ _ tyVarBndrs con _) -> (tyVarBndrs, [con])
+    (tyVarBndrs, cons) <- case typeInfo of
+            TyConI (DataD _ _ tyVarBndrs cons _) -> return (tyVarBndrs, cons)
+            TyConI (NewtypeD _ _ tyVarBndrs con _) -> return (tyVarBndrs, [con])
+            _                                      -> fail "makeCata: Expected name of type constructor"
     sequence [signature tyVarBndrs cons, funDef cons]
   where
     signature :: [TyVarBndr] -> [Con] -> Q Dec
