@@ -123,7 +123,7 @@ makeCata opts typeName  = sequence [signature, funDef]
     signature :: Q Dec
     signature = do
         (TyConI (DataD _ _ tyVarBndrs cons _)) <- reify typeName
-        let tyVarNames = map (\(PlainTV n) -> n) tyVarBndrs
+        let tyVarNames = map tyVarName tyVarBndrs
         let typeConType = foldl AppT (ConT typeName) (map VarT tyVarNames)
         resultTypeName <- newName "a"
         let args = map (conType resultTypeName) cons ++ [typeConType, VarT resultTypeName]
@@ -161,4 +161,8 @@ makeCata opts typeName  = sequence [signature, funDef]
         conToConP c = do
             argNames <- replicateM (length . conArgTypes $ c) (VarP <$> newName "a")
             return (ConP (conName c) argNames)
+
+tyVarName :: TyVarBndr -> Name
+tyVarName (PlainTV n) = n
+tyVarName (KindedTV n _) = n
 
