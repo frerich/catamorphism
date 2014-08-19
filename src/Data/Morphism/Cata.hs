@@ -100,15 +100,15 @@ makeFuncT :: Type -> Type -> Type
 makeFuncT a = AppT (AppT ArrowT a)
 
 conArgTypes :: Con -> [Type]
-conArgTypes (NormalC _ args) = map snd args
-conArgTypes (RecC _ args) = map (\(_,_,x) -> x) args
+conArgTypes (NormalC _ args)     = map snd args
+conArgTypes (RecC _ args)        = map (\(_,_,x) -> x) args
 conArgTypes (InfixC arg1 _ arg2) = map snd [arg1, arg2]
-conArgTypes (ForallC _ _ c) = conArgTypes c
+conArgTypes (ForallC _ _ c)      = conArgTypes c
 
 conName :: Con -> Name
-conName (NormalC n _) = n
-conName (RecC n _) = n
-conName (InfixC _ n _) = n
+conName (NormalC n _)   = n
+conName (RecC n _)      = n
+conName (InfixC _ n _)  = n
 conName (ForallC _ _ c) = conName c
 
 conType :: Name -> Con -> Type
@@ -121,7 +121,7 @@ makeCata :: CataOptions     -- Options to customize the catamorphism; the name o
 makeCata opts typeName = do
     typeInfo <- reify typeName
     (tyVarBndrs, cons) <- case typeInfo of
-            TyConI (DataD _ _ tyVarBndrs cons _) -> return (tyVarBndrs, cons)
+            TyConI (DataD _ _ tyVarBndrs cons _)   -> return (tyVarBndrs, cons)
             TyConI (NewtypeD _ _ tyVarBndrs con _) -> return (tyVarBndrs, [con])
             _                                      -> fail "makeCata: Expected name of type constructor"
     sequence [signature tyVarBndrs cons, funDef cons]
@@ -167,6 +167,6 @@ makeCata opts typeName = do
             return (ConP (conName c) argNames)
 
 tyVarName :: TyVarBndr -> Name
-tyVarName (PlainTV n) = n
+tyVarName (PlainTV n)    = n
 tyVarName (KindedTV n _) = n
 
