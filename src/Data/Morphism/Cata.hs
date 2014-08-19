@@ -39,7 +39,7 @@ of numbers, supporting variables:
 >             | Variable Char
 >             | Sum (Expr a) (Expr a)
 > 
-> $(makeCata defaultOptions { cataName = "cataExpr" } ''Expr)
+> makeCata defaultOptions { cataName = "cataExpr" } ''Expr
 
 The 'makeCata' invocation defines a 'cataExpr' function which works like a fold on
 'Expr' values; it can be used to implement various useful other functions:
@@ -64,10 +64,9 @@ module Data.Morphism.Cata
     )
 where
 
-import Control.Monad (forM, replicateM)
+import Control.Monad (replicateM)
 
 import Data.Char (toLower)
-import Data.Functor ((<$>))
 
 import Language.Haskell.TH
 
@@ -96,41 +95,47 @@ data CataOptions = CataOptions {
 defaultOptions :: CataOptions
 defaultOptions = CataOptions ""
 
-makeFuncT :: Type -> Type -> Type
-makeFuncT a = AppT (AppT ArrowT a)
+makeFuncT :: TypeQ -> TypeQ -> TypeQ
+makeFuncT a = appT (appT arrowT a)
 
 conArgTypes :: Con -> [Type]
-conArgTypes (NormalC _ args) = map snd args
-conArgTypes (RecC _ args) = map (\(_,_,x) -> x) args
+conArgTypes (NormalC _ args)     = map snd args
+conArgTypes (RecC _ args)        = map (\(_,_,x) -> x) args
 conArgTypes (InfixC arg1 _ arg2) = map snd [arg1, arg2]
-conArgTypes (ForallC _ _ c) = conArgTypes c
+conArgTypes (ForallC _ _ c)      = conArgTypes c
 
 conName :: Con -> Name
-conName (NormalC n _) = n
-conName (RecC n _) = n
-conName (InfixC _ n _) = n
+conName (NormalC n _)   = n
+conName (RecC n _)      = n
+conName (InfixC _ n _)  = n
 conName (ForallC _ _ c) = conName c
 
-conType :: Name -> Con -> Type
-conType resultT c = foldr makeFuncT (VarT resultT) (conArgTypes c)
+conType :: Name -> Con -> TypeQ
+conType resultT c = foldr makeFuncT (varT resultT) (map return (conArgTypes c))
 
 -- |The 'makeCata' function creates a catamorphism for the given type.
 makeCata :: CataOptions     -- Options to customize the catamorphism; the name of the defined function can be changed
          -> Name            -- The type to generate a catamorphism for.
-         -> Q [Dec]
-makeCata opts typeName  = sequence [signature, funDef]
-  where
-    signature :: Q Dec
-    signature = do
-        (TyConI (DataD _ _ tyVarBndrs cons _)) <- reify typeName
-        let tyVarNames = map (\(PlainTV n) -> n) tyVarBndrs
-        let typeConType = foldl AppT (ConT typeName) (map VarT tyVarNames)
-        resultTypeName <- newName "a"
-        let args = map (conType resultTypeName) cons ++ [typeConType, VarT resultTypeName]
-        return (SigD funName (ForallT (PlainTV resultTypeName : tyVarBndrs) [] (foldr1 makeFuncT args)))
+         -> DecsQ
+makeCata opts typeName = do
+  info          <- reify typeName
+  (bndrs, cons) <- case info of
+     TyConI (DataD    _ _ bndrs cons _) -> return (bndrs, cons)
+     TyConI (NewtypeD _ _ bndrs con  _) -> return (bndrs, [con])
+     _                                  -> fail "makeCata: Expected name of type constructor"
+  sequence [signature bndrs cons, funDef cons]
 
-    funDef :: Q Dec
-    funDef = (FunD funName . (:[])) <$> funImpl
+  where
+    signature :: [TyVarBndr] -> [Con] -> DecQ
+    signature tyVarBndrs cons = do
+        resultTypeName <- newName "a"
+        let tyVarNames  = map tvName tyVarBndrs
+            typeConType = appsT (conT typeName) (map varT tyVarNames)
+            args        = map (conType resultTypeName) cons ++ [typeConType, varT resultTypeName]
+        sigD funName (forallT (PlainTV resultTypeName : tyVarBndrs) (cxt[]) (foldr1 makeFuncT args))
+
+    funDef :: [Con] -> DecQ
+    funDef cons = funD funName [funImpl cons]
 
     funName :: Name
     funName = mkName $
@@ -138,27 +143,26 @@ makeCata opts typeName  = sequence [signature, funDef]
             then let (x:xs) = nameBase typeName in toLower x : xs
             else cataName opts
 
-    funImpl :: Q Clause
-    funImpl = do
-        (TyConI (DataD _ _ _ cons _)) <- reify typeName
-        conArgs <- replicateM (length cons) (VarP <$> newName "c")
-
+    funImpl :: [Con] -> ClauseQ
+    funImpl cons = do
+        conArgs      <- replicateM (length cons) (newName "c")
         valueArgName <- newName "x"
-        let funArgs = conArgs ++ [VarP valueArgName]
 
-        matches <- forM (zip cons conArgs) $ \(c, VarP cn) -> do
-            pat@(ConP _ conPats) <- conToConP c
-            let patNames = map (\(VarP n) -> n) conPats
+        let funArgs = map varP conArgs ++ [varP valueArgName]
 
-            let bodyE = foldl1 AppE . map VarE $ (cn : patNames)
-            return (Match pat (NormalB bodyE) [])
+            mkMatch c cn = do
+              argNames <- replicateM (length (conArgTypes c)) (newName "a")
+              let pat       = conP (conName c) (map varP argNames)
+              let matchBody = appsE (map varE (cn:argNames))
+              match pat (normalB matchBody) []
 
-        let bodyE = CaseE (VarE valueArgName) matches
-        return (Clause funArgs (NormalB bodyE) [])
+            bodyE = caseE (varE valueArgName) (zipWith mkMatch cons conArgs)
 
-      where
-        conToConP :: Con -> Q Pat
-        conToConP c = do
-            argNames <- replicateM (length . conArgTypes $ c) (VarP <$> newName "a")
-            return (ConP (conName c) argNames)
+        clause funArgs (normalB bodyE) []
 
+tvName :: TyVarBndr -> Name
+tvName (PlainTV n) = n
+tvName (KindedTV n _) = n
+
+appsT :: TypeQ -> [TypeQ] -> TypeQ
+appsT = foldl appT
