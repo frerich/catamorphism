@@ -1,6 +1,7 @@
 name:                catamorphism
 version:             0.2.0.0
 synopsis:            A package exposing a helper function for generating catamorphisms.
+description:         A package exposing a helper function for generating catamorphisms.
 homepage:            http://github.com/frerich/catamorphism
 license:             BSD3
 license-file:        LICENSE
