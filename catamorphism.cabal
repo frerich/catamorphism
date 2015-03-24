@@ -17,7 +17,7 @@ source-repository head
 
 library
   exposed-modules:     Data.Morphism.Cata
-  build-depends:       base >=4.6 && <4.7, template-haskell >=2.8 && <2.9
+  build-depends:       base >=4.6 && <4.8, template-haskell >=2.8 && <2.10
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
