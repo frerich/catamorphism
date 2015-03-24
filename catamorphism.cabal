@@ -6,10 +6,12 @@ license:             BSD3
 license-file:        LICENSE
 author:              Frerich Raabe
 maintainer:          frerich.raabe@gmail.com
+bug-reports:         https://github.com/frerich/makemorphism/issues
 copyright:           Copyright (c) 2014 Frerich Raabe <frerich.raabe@gmail.com>
 category:            Development
 build-type:          Simple
 cabal-version:       >=1.10
+stability:           experimental
 
 source-repository head
   type:       git
