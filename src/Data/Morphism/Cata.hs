@@ -19,7 +19,7 @@ values and foldr (for lists). These catamorphisms could have been generated usin
 > -- Defines 'bool :: a -> a -> Bool -> a'
 > $(makeCata defaultOptions ''Bool)
 >
-> -- Defines 'maybe :: b -> (Maybe a -> b) -> Maybe a -> b'
+> -- Defines 'maybe :: b -> (a -> b) -> Maybe a -> b'
 > $(makeCata defaultOptions ''Maybe)
 >
 > -- Defines 'either :: (a -> c) -> (b -> c) -> Either a b -> c'
