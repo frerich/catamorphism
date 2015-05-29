@@ -12,9 +12,9 @@ value. See <http://www.haskell.org/haskellwiki/Catamorphisms> for a more
 in-depth discussion of catamorphisms in Haskell.
 
 The Haskell base package already comes with a couple of standard catamorphisms
-such as 'bool' (for Bool values), 'maybe' (for Maybe values) values, 'either' for (Either values)
-values and foldr (for lists). These catamorphisms could have been generated using
-'makeCata' as follows:
+such as 'bool' (for Bool values), 'maybe' (for Maybe values) values, 'either'
+for (Either values) values and 'foldr' (for lists). These catamorphisms could
+have been generated using 'makeCata' as follows:
 
 > -- Defines 'bool :: a -> a -> Bool -> a'
 > $(makeCata defaultOptions ''Bool)
@@ -30,15 +30,15 @@ the following simple example which defines a basic data type for modelling sums
 of numbers, supporting variables:
 
 > {-# LANGUAGE TemplateHaskell #-}
-> 
+>
 > import Data.Morphism.Cata
 > import Data.Maybe (fromJust)
 > import Data.Function (on)
-> 
+>
 > data Expr a = Number a
 >             | Variable Char
 >             | Sum (Expr a) (Expr a)
-> 
+>
 > $(makeCata defaultOptions { cataName = "cataExpr" } ''Expr)
 
 The 'makeCata' invocation defines a 'cataExpr' function which works like a fold on
@@ -47,11 +47,11 @@ The 'makeCata' invocation defines a 'cataExpr' function which works like a fold 
 > -- Evaluate an Expr, given some variable bindings
 > eval :: Num a => [(Char, a)] -> Expr a -> a
 > eval vars = cataExpr id (fromJust . (`lookup` vars)) ((+) `on` eval vars)
-> 
+>
 > -- Pretty-prints an Expr
 > pprint :: Show a => Expr a -> String
 > pprint = cataExpr show show (\a b -> pprint a ++ " + " ++ pprint b)
-> 
+>
 > -- Counts the number of variables used in an expr
 > numVars :: Expr a -> Int
 > numVars = cataExpr (const 1) (const 0) ((+) `on` numVars)
