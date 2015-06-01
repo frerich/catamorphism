@@ -18,7 +18,6 @@ for modelling expressions involving numbers, variables and sums as in
 
 import Data.Morphism.Cata
 import Data.Maybe (fromJust)
-import Data.Function (on)
 
 data Expr a = Number a
             | Variable Char
@@ -33,7 +32,7 @@ values - the function will be called `cataExpr`:
 
     cataExpr :: (a -> b)                   -- Number constructor
              -> (Char -> b)                -- Variable constructor
-             -> (Expr a -> Expr a -> b)    -- Sum constructor
+             -> (b -> b -> b)              -- Sum constructor
              -> Expr a
              -> b
 -}
@@ -45,14 +44,14 @@ This catamorphism can be used to define a whole bunch of other useful functions 
 ``` haskell
 -- Evaluate an Expr, given some variable bindings
 eval :: Num a => [(Char, a)] -> Expr a -> a
-eval vars = cataExpr id (fromJust . (`lookup` vars)) ((+) `on` eval vars)
+eval vars = cataExpr id (fromJust . (`lookup` vars)) (+)
 
 -- Pretty-prints an Expr
 pprint :: Show a => Expr a -> String
-pprint = cataExpr show show (\a b -> pprint a ++ " + " ++ pprint b)
+pprint = cataExpr show show (\a b -> a ++ " + " ++ b)
 
 -- Counts the number of variables used in an expr
 numVars :: Expr a -> Int
-numVars = cataExpr (const 1) (const 0) ((+) `on` numVars)
+numVars = cataExpr (const 1) (const 0) (+)
 ```
 
