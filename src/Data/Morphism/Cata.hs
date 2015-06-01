@@ -118,8 +118,8 @@ conType resultT c = foldr makeFuncT (VarT resultT) (conArgTypes c)
 makeCata :: CataOptions     -- Options to customize the catamorphism; the name of the defined function can be changed
          -> Name            -- The type to generate a catamorphism for.
          -> Q [Dec]
-makeCata opts typeName = do
-    typeInfo <- reify typeName
+makeCata opts ty = do
+    typeInfo <- reify ty
     (tyVarBndrs, cons) <- case typeInfo of
             TyConI (DataD _ _ tyVarBndrs cons _)   -> return (tyVarBndrs, cons)
             TyConI (NewtypeD _ _ tyVarBndrs con _) -> return (tyVarBndrs, [con])
@@ -129,7 +129,7 @@ makeCata opts typeName = do
     signature :: [TyVarBndr] -> [Con] -> Q Dec
     signature tyVarBndrs cons = do
         let tyVarNames = map tyVarName tyVarBndrs
-        let typeConType = foldl AppT (ConT typeName) (map VarT tyVarNames)
+        let typeConType = foldl AppT (ConT ty) (map VarT tyVarNames)
         resultTypeName <- newName "a"
         let args = map (conType resultTypeName) cons ++ [typeConType, VarT resultTypeName]
         return (SigD funName (ForallT (PlainTV resultTypeName : tyVarBndrs) [] (foldr1 makeFuncT args)))
@@ -140,7 +140,7 @@ makeCata opts typeName = do
     funName :: Name
     funName = mkName $
         if null (cataName opts)
-            then let (x:xs) = nameBase typeName in toLower x : xs
+            then let (x:xs) = nameBase ty in toLower x : xs
             else cataName opts
 
     funImpl :: [Con] -> Q Clause
