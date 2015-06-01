@@ -145,12 +145,12 @@ makeCata opts ty = do
 
     funImpl :: [Con] -> Q Clause
     funImpl cons = do
-        conArgs <- replicateM (length cons) (VarP <$> newName "c")
+        conArgNames <- replicateM (length cons) (newName "c")
 
         valueArgName <- newName "x"
-        let funArgs = conArgs ++ [VarP valueArgName]
+        let funArgs = map VarP (conArgNames ++ [valueArgName])
 
-        matches <- forM (zip cons conArgs) $ \(c, VarP cn) -> do
+        matches <- forM (zip cons conArgNames) $ \(c, cn) -> do
             pat@(ConP _ conPats) <- conToConP c
             let patNames = map (\(VarP n) -> n) conPats
 
