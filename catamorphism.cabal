@@ -1,5 +1,5 @@
 name:                catamorphism
-version:             0.5.0.0
+version:             0.5.0.1
 synopsis:            A package exposing a helper function for generating catamorphisms.
 description:         A package exposing a helper function for generating catamorphisms.
 homepage:            http://github.com/frerich/catamorphism
