@@ -38,6 +38,7 @@ of numbers, supporting variables:
 >             | Variable Char
 >             | Sum (Expr a) (Expr a)
 >
+> -- Defines 'cataExpr :: (a -> b) -> (Char -> b) -> (b -> b -> b) -> Expr a -> b'
 > $(makeCata defaultOptions { cataName = "cataExpr" } ''Expr)
 
 The 'makeCata' invocation defines a 'cataExpr' function which works like a fold on
