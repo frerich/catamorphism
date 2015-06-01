@@ -33,7 +33,6 @@ of numbers, supporting variables:
 >
 > import Data.Morphism.Cata
 > import Data.Maybe (fromJust)
-> import Data.Function (on)
 >
 > data Expr a = Number a
 >             | Variable Char
@@ -46,15 +45,15 @@ The 'makeCata' invocation defines a 'cataExpr' function which works like a fold 
 
 > -- Evaluate an Expr, given some variable bindings
 > eval :: Num a => [(Char, a)] -> Expr a -> a
-> eval vars = cataExpr id (fromJust . (`lookup` vars)) ((+) `on` eval vars)
+> eval vars = cataExpr id (fromJust . (`lookup` vars)) (+)
 >
 > -- Pretty-prints an Expr
 > pprint :: Show a => Expr a -> String
-> pprint = cataExpr show show (\a b -> pprint a ++ " + " ++ pprint b)
+> pprint = cataExpr show show (\a b -> a ++ " + " ++ b)
 >
 > -- Counts the number of variables used in an expr
 > numVars :: Expr a -> Int
-> numVars = cataExpr (const 1) (const 0) ((+) `on` numVars)
+> numVars = cataExpr (const 1) (const 0) (+)
 -}
 
 module Data.Morphism.Cata
@@ -111,8 +110,19 @@ conName (RecC n _)      = n
 conName (InfixC _ n _)  = n
 conName (ForallC _ _ c) = conName c
 
-conType :: Name -> Con -> Type
-conType resultT c = foldr makeFuncT (VarT resultT) (conArgTypes c)
+typeName :: Type -> Maybe Name
+typeName (AppT t _) = typeName t
+typeName (ConT n)   = Just n
+typeName _          = Nothing
+
+conType :: Name -> Name -> Con -> Type
+conType inputT resultT c = foldr makeFuncT (VarT resultT) argTypes
+  where
+    argTypes = map fixupArgType (conArgTypes c)
+
+    fixupArgType t = case typeName t of
+                        Just n  -> if n == inputT then VarT resultT else t
+                        Nothing -> t
 
 -- |The 'makeCata' function creates a catamorphism for the given type.
 makeCata :: CataOptions     -- Options to customize the catamorphism; the name of the defined function can be changed
@@ -131,7 +141,7 @@ makeCata opts ty = do
         let tyVarNames = map tyVarName tyVarBndrs
         let typeConType = foldl AppT (ConT ty) (map VarT tyVarNames)
         resultTypeName <- newName "a"
-        let args = map (conType resultTypeName) cons ++ [typeConType, VarT resultTypeName]
+        let args = map (conType ty resultTypeName) cons ++ [typeConType, VarT resultTypeName]
         return (SigD funName (ForallT (PlainTV resultTypeName : tyVarBndrs) [] (foldr1 makeFuncT args)))
 
     funDef :: [Con] -> Q Dec
@@ -154,7 +164,12 @@ makeCata opts ty = do
             pat@(ConP _ conPats) <- conToConP c
             let patNames = map (\(VarP n) -> n) conPats
 
-            let bodyE = foldl1 AppE . map VarE $ (cn : patNames)
+            let translateArg t arg = case typeName t of
+                    Just n -> if n == ty then foldl AppE (VarE funName) (map VarE (conArgNames ++ [arg])) else VarE arg
+                    Nothing -> VarE arg
+
+            let argsWithTypes = zipWith translateArg (conArgTypes c) patNames
+            let bodyE = foldl AppE (VarE cn) argsWithTypes
             return (Match pat (NormalB bodyE) [])
 
         let bodyE = CaseE (VarE valueArgName) matches
