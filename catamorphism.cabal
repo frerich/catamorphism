@@ -2,7 +2,7 @@ name:                catamorphism
 version:             0.5.0.1
 synopsis:            A package exposing a helper function for generating catamorphisms.
 description:         A package exposing a helper function for generating catamorphisms.
-homepage:            http://github.com/frerich/catamorphism
+homepage:            https://github.com/frerich/catamorphism
 license:             BSD3
 license-file:        LICENSE
 author:              Frerich Raabe
@@ -16,7 +16,7 @@ stability:           experimental
 
 source-repository head
   type:       git
-  location:   http://github.com/frerich/catamorphism
+  location:   https://github.com/frerich/catamorphism
 
 library
   exposed-modules:     Data.Morphism.Cata
