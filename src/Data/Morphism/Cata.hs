@@ -70,6 +70,7 @@ import Data.Char (toLower)
 import Data.Functor ((<$>))
 
 import Language.Haskell.TH
+import Language.Haskell.TH.Syntax (mkNameG, NameSpace(TcClsName))
 
 {-|
     Values of the 'CataOptions' type can be passed to 'makeCata' in order to
@@ -96,6 +97,9 @@ data CataOptions = CataOptions {
 defaultOptions :: CataOptions
 defaultOptions = CataOptions ""
 
+listName :: Name
+listName = mkNameG TcClsName "ghc-prim" "GHC.Types" "[]"
+
 makeFuncT :: Type -> Type -> Type
 makeFuncT a = AppT (AppT ArrowT a)
 
@@ -114,6 +118,7 @@ conName (ForallC _ _ c) = conName c
 typeName :: Type -> Maybe Name
 typeName (AppT t _) = typeName t
 typeName (ConT n)   = Just n
+typeName ListT      = Just listName
 typeName _          = Nothing
 
 conType :: Name -> Name -> Con -> Type
