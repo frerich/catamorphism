@@ -24,6 +24,11 @@ have been generated using 'makeCata' as follows:
 >
 > -- Defines 'either :: (a -> c) -> (b -> c) -> Either a b -> c'
 > $(makeCata defaultOptions ''Either)
+>
+> -- Defines 'fold :: b -> (a -> b -> b) -> [a] -> b', i.e. 'flip foldr'. Note
+> -- that a custom catamorphism name has to be specified since '[]' is not a
+> -- valid function name.
+> $(makeCata defaultOptions { cataName = "fold" } ''[])
 
 However, catamorphisms are especially useful for recursive data structures. Consider
 the following simple example which defines a basic data type for modelling sums
