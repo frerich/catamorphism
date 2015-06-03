@@ -1,4 +1,4 @@
-makemorphisms
+catamorphisms
 =============
 
 This project builds an Haskell module `Data.Morphism.Cata` which exports a
