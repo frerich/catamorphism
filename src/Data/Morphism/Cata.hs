@@ -62,6 +62,7 @@ The 'makeCata' invocation defines a 'cataExpr' function which works like a fold 
 > numVars = cataExpr (const 1) (const 0) (+)
 -}
 
+{-# LANGUAGE CPP #-}
 module Data.Morphism.Cata
     ( CataOptions(..)
     , defaultOptions
@@ -113,12 +114,22 @@ conArgTypes (NormalC _ args)     = map snd args
 conArgTypes (RecC _ args)        = map (\(_,_,x) -> x) args
 conArgTypes (InfixC arg1 _ arg2) = map snd [arg1, arg2]
 conArgTypes (ForallC _ _ c)      = conArgTypes c
+#if MIN_VERSION_template_haskell(2,11,0)
+conArgTypes (GadtC _ args _)     = map snd args
+conArgTypes (RecGadtC _ args _)  = map (\(_,_,x) -> x) args
+#endif
 
 conName :: Con -> Name
-conName (NormalC n _)   = n
-conName (RecC n _)      = n
-conName (InfixC _ n _)  = n
-conName (ForallC _ _ c) = conName c
+conName (NormalC n _)    = n
+conName (RecC n _)       = n
+conName (InfixC _ n _)   = n
+conName (ForallC _ _ c)  = conName c
+-- How to handle these? Both constructor types take a list of names - which
+-- (if any) of them should we pick?
+#if MIN_VERSION_template_haskell(2,11,0)
+conName (GadtC _ _ _)    = undefined
+conName (RecGadtC _ _ _) = undefined
+#endif
 
 typeName :: Type -> Maybe Name
 typeName (AppT t _) = typeName t
@@ -142,8 +153,13 @@ makeCata :: CataOptions     -- Options to customize the catamorphism; the name o
 makeCata opts ty = do
     typeInfo <- reify ty
     (tyVarBndrs, cons) <- case typeInfo of
+#if MIN_VERSION_template_haskell(2,11,0)
+            TyConI (DataD _ _ tyVarBndrs _ cons _)   -> return (tyVarBndrs, cons)
+            TyConI (NewtypeD _ _ tyVarBndrs _ con _) -> return (tyVarBndrs, [con])
+#else
             TyConI (DataD _ _ tyVarBndrs cons _)   -> return (tyVarBndrs, cons)
             TyConI (NewtypeD _ _ tyVarBndrs con _) -> return (tyVarBndrs, [con])
+#endif
             _                                      -> fail "makeCata: Expected name of type constructor"
     sequence [signature tyVarBndrs cons, funDef cons]
   where
