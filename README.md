@@ -1,6 +1,8 @@
 catamorphisms
 =============
 
+[![Build Status](https://travis-ci.org/frerich/catamorphism.svg?branch=master)](https://travis-ci.org/frerich/catamorphism)
+
 This project builds an Haskell module `Data.Morphism.Cata` which exports a
 `makeCata` function which can be used to generate
 [catamorphisms](http://www.haskell.org/haskellwiki/Catamorphisms) for Haskell
