@@ -73,7 +73,12 @@ where
 import Control.Monad (forM, replicateM)
 
 import Data.Char (toLower)
+-- The prelude exports (<$>) in base 4.8.0 and later, so don't include
+-- Data.Functor to avoid compiler warnings about unneeded imports.
+#if MIN_VERSION_base(4,8,0)
+#else
 import Data.Functor ((<$>))
+#endif
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax (mkNameG, NameSpace(TcClsName))
