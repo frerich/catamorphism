@@ -148,7 +148,9 @@ conType inputT resultT c = foldr makeFuncT (VarT resultT) argTypes
     argTypes = map fixupArgType (conArgTypes c)
 
     fixupArgType t = case typeName t of
-                        Just n  -> if n == inputT then VarT resultT else t
+                        Just n
+                            | n == inputT -> VarT resultT
+                            | otherwise   -> t
                         Nothing -> t
 
 -- |The 'makeCata' function creates a catamorphism for the given type.
@@ -197,8 +199,10 @@ makeCata opts ty = do
             let patNames = map (\(VarP n) -> n) conPats
 
             let translateArg t arg = case typeName t of
-                    Just n -> if n == ty then foldl AppE (VarE funName) (map VarE (conArgNames ++ [arg])) else VarE arg
-                    Nothing -> VarE arg
+                    Just n
+                        | n == ty   -> foldl AppE (VarE funName) (map VarE (conArgNames ++ [arg]))
+                        | otherwise -> VarE arg
+                    Nothing         -> VarE arg
 
             let argsWithTypes = zipWith translateArg (conArgTypes c) patNames
             let bodyE = foldl AppE (VarE cn) argsWithTypes
