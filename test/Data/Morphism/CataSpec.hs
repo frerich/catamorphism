@@ -21,6 +21,7 @@ data Binary = Zero | One
 data PolymorphSum a = PolymorphSum a
 data PolymorphProduct a b = PolymorphProduct a b
 data RegularRecursive a = Cons a (RegularRecursive a) | Empty
+data RoseTree a = Node a [RoseTree a]
 
 $(makeCata defaultOptions ''Unit)
 $(makeCata defaultOptions ''Binary)
@@ -28,6 +29,7 @@ $(makeCata defaultOptions ''PolymorphSum)
 $(makeCata defaultOptions ''PolymorphProduct)
 $(makeCata defaultOptions ''RegularRecursive)
 $(makeCata defaultOptions { cataName = "binaryFold" } ''Binary)
+$(makeCata defaultOptions ''RoseTree)
 
 $(makeCata defaultOptions { cataName = "bool'" } ''Bool)
 $(makeCata defaultOptions { cataName = "maybe'" } ''Maybe)
@@ -64,6 +66,11 @@ spec = do
       length' Empty `shouldBe` 0
       length' (Cons () (Cons () (Cons () Empty))) `shouldBe` 3
       length' (Cons 'a' (Cons 'b' Empty)) `shouldBe` 2
+
+    it "handles rose trees" $ do
+      let treeSum = roseTree (\x xs -> sum (x:xs)) :: RoseTree Int -> Int
+      treeSum (Node 3 []) `shouldBe` 3
+      treeSum (Node 0 [Node 1 [Node 2 [], Node 3 []], Node 4 [Node 5 [], Node 6 []], Node 7 [Node 8 [], Node 9 []]]) `shouldBe` 45
 
   describe "custom options" $
     it "allows customizing the function name" $ do
