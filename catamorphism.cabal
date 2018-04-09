@@ -1,6 +1,6 @@
 name:                catamorphism
 version:             0.6.0.0
-synopsis:            A package exposing a helper function for generating catamorphisms.
+synopsis:            Helper function for generating catamorphisms
 description:         A package exposing a helper function for generating catamorphisms.
 homepage:            https://github.com/frerich/catamorphism
 license:             BSD3
@@ -13,6 +13,7 @@ category:            Development
 build-type:          Simple
 cabal-version:       >=1.10
 stability:           experimental
+tested-with:         GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.1
 
 source-repository head
   type:       git
@@ -20,7 +21,7 @@ source-repository head
 
 library
   exposed-modules:     Data.Morphism.Cata
-  build-depends:       base >=4.6 && <4.12, template-haskell >=2.8 && <2.14
+  build-depends:       base <5, template-haskell
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
@@ -30,6 +31,7 @@ test-suite spec
   main-is:             Tests.hs
   hs-source-dirs:      test
   ghc-options:         -Wall
-  build-depends:       base, catamorphism, hspec
+  build-depends:       base >= 4.7, catamorphism, hspec
   other-modules:       Data.Morphism.CataSpec
   default-language:    Haskell2010
+  build-tools:         hspec-discover
