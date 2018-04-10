@@ -177,7 +177,7 @@ makeCata opts ty = do
         return (SigD funName (ForallT (PlainTV resultTypeName : tyVarBndrs) [] (foldr1 makeFuncT args)))
 
     funDef :: [Con] -> Q Dec
-    funDef cons = (FunD funName . (:[])) <$> funImpl cons
+    funDef cons = FunD funName . (:[]) <$> funImpl cons
 
     funName :: Name
     funName = mkName $
@@ -209,9 +209,7 @@ makeCata opts ty = do
 
       where
         conToConP :: Con -> Q Pat
-        conToConP c = do
-            argNames <- replicateM (length . conArgTypes $ c) (VarP <$> newName "a")
-            return (ConP (conName c) argNames)
+        conToConP c = ConP (conName c) <$> replicateM (length . conArgTypes $ c) (VarP <$> newName "a")
 
 tyVarName :: TyVarBndr -> Name
 tyVarName (PlainTV n)    = n
