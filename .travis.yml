@@ -7,4 +7,5 @@ ghc:
     - "7.8"
 
 before_install:
-    wget https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh -O - --quiet | sh -s .
+    - cabal check
+    - wget https://raw.github.com/ndmitchell/hlint/master/misc/travis.sh -O - --quiet | sh -s .
