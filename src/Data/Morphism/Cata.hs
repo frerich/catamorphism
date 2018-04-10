@@ -62,6 +62,7 @@ The 'makeCata' invocation defines a 'cataExpr' function which works like a fold 
 > numVars = cataExpr (const 1) (const 0) (+)
 -}
 
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE CPP #-}
 module Data.Morphism.Cata
     ( CataOptions(..)
@@ -148,7 +149,10 @@ conType inputT resultT c = foldr makeFuncT (VarT resultT) argTypes
     argTypes = map fixupArgType (conArgTypes c)
 
     fixupArgType t = case typeName t of
-                        Just n  -> if n == inputT then VarT resultT else t
+                        Just n
+                            | n == inputT   -> VarT resultT
+                            | n == listName -> AppT ListT (VarT resultT)
+                            | otherwise     -> t
                         Nothing -> t
 
 -- |The 'makeCata' function creates a catamorphism for the given type.
@@ -197,8 +201,11 @@ makeCata opts ty = do
             let patNames = map (\(VarP n) -> n) conPats
 
             let translateArg t arg = case typeName t of
-                    Just n -> if n == ty then foldl AppE (VarE funName) (map VarE (conArgNames ++ [arg])) else VarE arg
-                    Nothing -> VarE arg
+                    Just n
+                        | n == ty       -> foldl AppE (VarE funName) (map VarE (conArgNames ++ [arg]))
+                        | n == listName -> foldl1 AppE [VarE 'fmap, AppE (VarE funName) (VarE cn), VarE arg]
+                        | otherwise     -> VarE arg
+                    Nothing             -> VarE arg
 
             let argsWithTypes = zipWith translateArg (conArgTypes c) patNames
             let bodyE = foldl AppE (VarE cn) argsWithTypes
