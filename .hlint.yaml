@@ -1,0 +1,4 @@
+# Ignore this warning for now since I'm not sure whether I could
+# safely replace a newtype with data in a future release in case
+# I decide that I want to add more data constructors.
+- ignore: {name: "Use newtype instead of data"}
