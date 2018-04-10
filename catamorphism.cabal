@@ -1,5 +1,5 @@
 name:                catamorphism
-version:             0.6.1.0
+version:             0.6.1.1
 synopsis:            Exposes a Template Haskell function for generating catamorphisms.
 description:
   This module exposes a 'makeCata' function which can create catamorphisms for
