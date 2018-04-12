@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- GHC 7.10 seems to require KindSignatures for the polymorph folds defined
 -- below.
@@ -10,6 +11,7 @@
 module Data.Morphism.CataSpec (main, spec) where
 
 import Test.Hspec
+import Test.QuickCheck
 import Data.Morphism.Cata
 
 import Data.Bool (bool)
@@ -78,25 +80,17 @@ spec = do
       binaryFold 'z' 'o' One `shouldBe` 'o'
 
   describe "equivalence" $ do
-    let checkBinaryFn f g a b x = f a b x `shouldBe` g a b x
+    let checkBinaryEquiv f g a b = property (\x -> f a b x == g a b x)
 
-    it "can be used to define bool" $ do
-      let check = checkBinaryFn bool bool' "false" "true"
-      check False
-      check True
+    it "can be used to define bool" $
+      checkBinaryEquiv bool bool' "false" "true"
 
-    it "can be used to define maybe" $ do
-      let check = checkBinaryFn maybe maybe' "<empty>" (++ "!!!")
-      check Nothing
-      check (Just "Hello")
+    it "can be used to define maybe" $
+      checkBinaryEquiv maybe maybe' "<empty>" (++ "!!!")
 
-    it "can be used to define either" $ do
-      let check = checkBinaryFn either either' show (++ "!!!")
-      check (Left True)
-      check (Right "Either")
+    it "can be used to define either" $
+      checkBinaryEquiv either either' (show :: Bool -> String) (++ "!!!")
 
-    it "can be used to define foldr" $ do
+    it "can be used to define foldr" $
       -- Well, we can get 'foldr', but flipped.
-      let check = checkBinaryFn (flip foldr) foldr' (0 :: Int) (\_ acc -> acc + 1)
-      check []
-      check "Frobnicate"
+      checkBinaryEquiv foldr (flip foldr') (\(_ :: Int) (acc :: Int) -> acc + 1) 0
